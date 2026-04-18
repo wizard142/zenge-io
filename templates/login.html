@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zenge — Keeper's Sanctum</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #07080f;
+      --pane: rgba(8,10,18,0.8);
+      --gold: #c8a84b;
+      --gold-dim: rgba(200,168,75,0.12);
+      --gold-glow: rgba(200,168,75,0.45);
+      --crimson: #8b2020;
+      --crimson-bright: #c0392b;
+      --crimson-dim: rgba(192,57,43,0.1);
+      --text: #e8dfc8;
+      --muted: #5c5542;
+      --border: rgba(200,168,75,0.15);
+      --border-red: rgba(192,57,43,0.25);
+    }
+
+    body {
+      font-family: 'Crimson Pro', serif;
+      background: var(--ink);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #scene { position: fixed; inset: 0; z-index: 0; }
+    .vignette {
+      position: fixed; inset: 0; z-index: 2; pointer-events: none;
+      background: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 20%, rgba(4,5,12,0.92) 100%);
+    }
+
+    /* Scan beam */
+    .scan {
+      position: fixed; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(to right, transparent 0%, rgba(192,57,43,0.4) 40%, rgba(192,57,43,0.4) 60%, transparent 100%);
+      animation: scanBeam 8s ease-in-out infinite;
+      z-index: 3; pointer-events: none;
+    }
+    @keyframes scanBeam {
+      0%   { top: -2px; opacity: 0; }
+      5%   { opacity: 1; }
+      95%  { opacity: 0.5; }
+      100% { top: 100vh; opacity: 0; }
+    }
+
+    /* ── HEADER ── */
+    .brand-header {
+      position: fixed; top: 32px; left: 50%; transform: translateX(-50%);
+      z-index: 10; text-align: center;
+    }
+    .brand-logo {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 30px; font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.3em;
+      text-shadow: 0 0 30px var(--gold-glow), 0 0 60px rgba(200,168,75,0.15);
+    }
+    .brand-eyebrow {
+      font-size: 11px; color: var(--muted);
+      letter-spacing: 0.4em; text-transform: uppercase;
+      font-family: 'Cinzel', serif;
+      margin-top: 5px;
+    }
+
+    /* ── LAYOUT ── */
+    .layout {
+      position: relative; z-index: 10;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 0; width: 440px;
+      animation: emergeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+    }
+    @keyframes emergeUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Crest */
+    .crest {
+      width: 72px; height: 72px; position: relative;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: -1px; z-index: 2;
+      background: var(--ink);
+      border: 1px solid var(--border-red);
+      border-bottom: none;
+    }
+    .crest::before {
+      content: '';
+      position: absolute; inset: 4px;
+      border: 1px solid rgba(192,57,43,0.15);
+    }
+    .crest-icon { font-size: 28px; line-height: 1; }
+
+    /* Card */
+    .card {
+      width: 100%;
+      background: var(--pane);
+      border: 1px solid var(--border-red);
+      backdrop-filter: blur(24px);
+      padding: 40px 44px 44px;
+      position: relative;
+    }
+
+    /* Corner sigils */
+    .card::before, .card::after {
+      content: '✦';
+      position: absolute;
+      font-size: 12px;
+      color: var(--crimson-bright);
+      opacity: 0.4;
+    }
+    .card::before { top: 10px; left: 14px; }
+    .card::after  { bottom: 10px; right: 14px; }
+
+    /* Top divider with symbol */
+    .card-title-row {
+      text-align: center; margin-bottom: 8px;
+    }
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 20px; font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    h1 span { color: var(--crimson-bright); }
+    .subtitle {
+      font-style: italic; font-size: 13px; color: var(--muted);
+      letter-spacing: 0.05em; margin-bottom: 6px;
+    }
+
+    /* Warning banner */
+    .warning-bar {
+      background: var(--crimson-dim);
+      border: 1px solid var(--border-red);
+      padding: 9px 16px; margin: 20px 0 28px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 11px; color: rgba(192,57,43,0.9);
+      font-family: 'Cinzel', serif; letter-spacing: 0.1em;
+    }
+    .warning-bar .dot {
+      width: 6px; height: 6px; flex-shrink: 0;
+      background: var(--crimson-bright); border-radius: 50%;
+      box-shadow: 0 0 8px var(--crimson-bright);
+      animation: warnPulse 1.4s ease-in-out infinite;
+    }
+    @keyframes warnPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.7); }
+    }
+
+    .field { margin-bottom: 18px; }
+
+    label {
+      display: block;
+      font-family: 'Cinzel', serif;
+      font-size: 9px; letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(200,168,75,0.55);
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      background: rgba(200,168,75,0.03);
+      border: 1px solid rgba(200,168,75,0.15);
+      color: var(--text);
+      font-family: 'Crimson Pro', serif;
+      font-size: 16px;
+      padding: 13px 18px;
+      outline: none;
+      transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+    }
+    input::placeholder { color: var(--muted); font-style: italic; }
+    input:focus {
+      border-color: rgba(192,57,43,0.6);
+      background: var(--crimson-dim);
+      box-shadow: 0 0 0 3px rgba(192,57,43,0.08);
+    }
+
+    .btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 15px 20px;
+      background: linear-gradient(135deg, rgba(139,32,32,0.9), rgba(100,20,20,0.95));
+      color: #f0ddc0;
+      font-family: 'Cinzel', serif;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      border: 1px solid rgba(192,57,43,0.4);
+      cursor: pointer;
+      position: relative; overflow: hidden;
+      transition: box-shadow 0.3s, transform 0.2s;
+    }
+    .btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .btn:hover {
+      box-shadow: 0 0 24px rgba(192,57,43,0.4), 0 4px 16px rgba(0,0,0,0.6);
+      transform: translateY(-1px);
+    }
+    .btn:hover::before { opacity: 1; }
+
+    .footer {
+      text-align: center; margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(200,168,75,0.08);
+    }
+    .footer a {
+      font-family: 'Cinzel', serif;
+      font-size: 10px; letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted); text-decoration: none;
+      transition: color 0.3s;
+    }
+    .footer a:hover { color: var(--gold); }
+
+    /* Status row */
+    .status-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 20px; padding: 0 2px;
+    }
+    .status-item {
+      font-family: 'Cinzel', serif;
+      font-size: 8px; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--muted);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .status-item .ok {
+      width: 4px; height: 4px; background: #22c55e;
+      border-radius: 50%; box-shadow: 0 0 4px #22c55e;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<div class="vignette"></div>
+<div class="scan"></div>
+
+<div class="brand-header">
+  <div class="brand-logo">ZENGE</div>
+  <div class="brand-eyebrow">Keeper's Sanctum</div>
+</div>
+
+<div class="layout">
+  <div class="crest">
+    <div class="crest-icon">⚔</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title-row">
+      <h1>Warden <span>Access</span></h1>
+      <p class="subtitle">Only the Keeper may enter here</p>
+    </div>
+
+    <div class="warning-bar">
+      <span class="dot"></span>
+      Restricted Domain — Authorized Wardens Only
+    </div>
+
+    <form method="post">
+      <div class="field">
+        <label>Warden's Address</label>
+        <input type="text" name="email" placeholder="keeper@zenge.io" required />
+      </div>
+      <div class="field">
+        <label>Sacred Cipher</label>
+        <input type="password" name="password" placeholder="· · · · · · · ·" required />
+      </div>
+      <button class="btn" type="submit">⚜ Invoke Access ⚜</button>
+    </form>
+
+    <div class="footer">
+      <a href="/">← Return to the World</a>
+    </div>
+  </div>
+
+  <div class="status-row">
+    <div class="status-item"><span class="ok"></span> Cipher Active</div>
+    <div class="status-item"><span class="ok"></span> Wards Holding</div>
+    <div class="status-item"><span class="ok"></span> Realm Stable</div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+const stars = Array.from({length: 160}, () => ({
+  x: Math.random(), y: Math.random() * 0.8,
+  r: Math.random() * 1.2 + 0.2,
+  o: Math.random() * 0.6 + 0.2,
+  t: Math.random() * Math.PI * 2,
+  s: Math.random() * 0.015 + 0.004
+}));
+
+// Runic floating symbols
+const runes = Array.from({length: 8}, () => ({
+  x: Math.random(), y: Math.random() * 0.9,
+  char: ['◈','⬡','✦','⚜','◇','⬟'][Math.floor(Math.random()*6)],
+  size: 10 + Math.random() * 18,
+  phase: Math.random() * Math.PI * 2,
+  speed: 0.003 + Math.random() * 0.004,
+  vx: (Math.random()-0.5)*0.0001,
+  vy: (Math.random()-0.5)*0.00005,
+  color: Math.random() > 0.5 ? '#c8a84b' : '#8b2020'
+}));
+
+// Terrain — darker, more foreboding
+const terrain = [
+  { color: '#090c15', pts: [0,1,0.2,0.5,0.4,0.65,0.6,0.48,0.8,0.62,1,1] },
+  { color: '#0c1020', pts: [0,1,0.15,0.62,0.35,0.72,0.55,0.6,0.75,0.7,0.92,0.62,1,1] },
+  { color: '#0f1428', pts: [0,1,0.1,0.74,0.3,0.82,0.5,0.72,0.7,0.78,0.88,0.74,1,1] },
+];
+
+let t = 0;
+
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  // Sky
+  const sky = ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0, '#03040a');
+  sky.addColorStop(0.5, '#080c18');
+  sky.addColorStop(1, '#07080f');
+  ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
+
+  // Blood moon glow
+  const bmg = ctx.createRadialGradient(W*0.22, H*0.2, 0, W*0.22, H*0.2, W*0.45);
+  bmg.addColorStop(0, 'rgba(139,32,32,0.06)');
+  bmg.addColorStop(0.5, 'rgba(80,15,15,0.03)');
+  bmg.addColorStop(1, 'transparent');
+  ctx.fillStyle = bmg; ctx.fillRect(0,0,W,H);
+
+  // Stars
+  stars.forEach(s => {
+    s.t += s.s;
+    const alpha = s.o * (0.6 + 0.4*Math.sin(s.t));
+    ctx.beginPath();
+    ctx.arc(s.x*W, s.y*H, s.r, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(240,230,210,${alpha})`;
+    ctx.fill();
+  });
+
+  // Blood moon
+  const mx = W*0.22, my = H*0.2, mr = 44;
+  const moonGlow2 = ctx.createRadialGradient(mx,my,0,mx,my,mr*4);
+  moonGlow2.addColorStop(0,'rgba(160,40,30,0.15)');
+  moonGlow2.addColorStop(0.4,'rgba(100,20,20,0.05)');
+  moonGlow2.addColorStop(1,'transparent');
+  ctx.fillStyle = moonGlow2; ctx.fillRect(0,0,W,H);
+
+  ctx.beginPath();
+  ctx.arc(mx,my,mr,0,Math.PI*2);
+  const mg2 = ctx.createRadialGradient(mx-mr*0.3,my-mr*0.2,0,mx,my,mr);
+  mg2.addColorStop(0,'#d45050');
+  mg2.addColorStop(0.5,'#9b2c2c');
+  mg2.addColorStop(1,'#5a1010');
+  ctx.fillStyle = mg2; ctx.fill();
+
+  // Moon shadow
+  ctx.beginPath();
+  ctx.arc(mx+mr*0.2, my-mr*0.1, mr*0.82, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(4,5,14,0.5)'; ctx.fill();
+
+  // Runes
+  runes.forEach(r => {
+    r.phase += r.speed;
+    r.x += r.vx; r.y += r.vy;
+    if (r.x < 0.02 || r.x > 0.98) r.vx *= -1;
+    if (r.y < 0.02 || r.y > 0.88) r.vy *= -1;
+
+    ctx.save();
+    ctx.globalAlpha = 0.15 + 0.08*Math.sin(r.phase);
+    ctx.font = `${r.size}px serif`;
+    ctx.fillStyle = r.color;
+    ctx.fillText(r.char, r.x*W + Math.sin(r.phase)*6, r.y*H + Math.cos(r.phase*0.7)*4);
+    ctx.restore();
+  });
+
+  // Terrain
+  terrain.forEach(m => {
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    const pts = m.pts;
+    for (let i=0;i<pts.length;i+=2) ctx.lineTo(pts[i]*W, pts[i+1]*H);
+    ctx.closePath();
+    ctx.fillStyle = m.color; ctx.fill();
+  });
+
+  // Ground mist (red tinge)
+  const mist = ctx.createLinearGradient(0,H*0.8,0,H);
+  mist.addColorStop(0,'transparent');
+  mist.addColorStop(0.5,'rgba(60,8,8,0.04)');
+  mist.addColorStop(1,'rgba(8,6,14,0.95)');
+  ctx.fillStyle = mist; ctx.fillRect(0,H*0.8,W,H*0.2);
+
+  t++;
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
