@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zenge — Arcade of Souls</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--ink:#07080f;--surface:#0c0e1a;--gold:#c8a84b;--gold-dim:rgba(200,168,75,0.12);--gold-glow:rgba(200,168,75,0.4);--teal:#4ecdc4;--text:#e8dfc8;--muted:#5c5542;--border:rgba(200,168,75,0.15)}
+    body{font-family:'Crimson Pro',serif;background:var(--ink);color:var(--text);min-height:100vh;overflow-x:hidden}
+    #bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+    .vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 85% 85% at 50% 50%,transparent 30%,rgba(4,5,12,0.88) 100%)}
+
+    /* NAV */
+    .nav{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:18px 40px;background:rgba(7,8,15,0.85);border-bottom:1px solid var(--border);backdrop-filter:blur(16px)}
+    .nav-brand{font-family:'Cinzel Decorative',serif;font-size:22px;color:var(--gold);text-shadow:0 0 20px var(--gold-glow);letter-spacing:0.15em}
+    .nav-right{display:flex;align-items:center;gap:20px}
+    .nav-email{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.15em;color:var(--muted)}
+    .nav-link{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s}
+    .nav-link:hover{color:var(--gold)}
+
+    /* HERO */
+    .hero{position:relative;z-index:5;text-align:center;padding:130px 20px 60px}
+    .hero-eyebrow{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.35em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+    .hero-title{font-family:'Cinzel Decorative',serif;font-size:clamp(32px,6vw,52px);color:var(--gold);text-shadow:0 0 40px var(--gold-glow),0 0 80px rgba(200,168,75,0.15);letter-spacing:0.15em;line-height:1.1;margin-bottom:12px}
+    .hero-sub{font-style:italic;font-size:16px;color:var(--muted)}
+    .rune-div{display:flex;align-items:center;justify-content:center;gap:16px;margin:32px auto;max-width:300px}
+    .rune-div::before,.rune-div::after{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,var(--border),transparent)}
+    .rune-div span{color:var(--gold);font-size:16px;opacity:0.5}
+
+    /* MAIN GAME CARD */
+    .game-wrap{position:relative;z-index:5;max-width:900px;margin:0 auto;padding:0 32px 80px}
+
+    .main-card{background:rgba(10,12,20,0.95);border:1px solid rgba(200,168,75,0.35);padding:0;overflow:hidden;animation:cardIn .8s cubic-bezier(0.16,1,0.3,1) both;position:relative}
+    @keyframes cardIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+    .card-top-bar{height:3px;background:linear-gradient(90deg,#c8a84b,#4ecdc4,#c8a84b)}
+
+    .card-inner{padding:44px 48px;display:flex;align-items:center;gap:44px;flex-wrap:wrap}
+
+    .card-icon-wrap{flex-shrink:0;width:100px;height:100px;border:2px solid rgba(200,168,75,0.3);background:rgba(200,168,75,0.06);display:flex;align-items:center;justify-content:center;font-size:56px;position:relative}
+    .card-icon-wrap::before,.card-icon-wrap::after{content:'◈';position:absolute;font-size:10px;color:var(--gold);opacity:0.4}
+    .card-icon-wrap::before{top:-6px;left:-5px}
+    .card-icon-wrap::after{bottom:-6px;right:-5px}
+
+    .card-text{flex:1;min-width:200px}
+    .card-eyebrow{font-family:'Cinzel',serif;font-size:9px;letter-spacing:0.3em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+    .card-title{font-family:'Cinzel Decorative',serif;font-size:clamp(20px,3vw,30px);color:var(--gold);letter-spacing:0.1em;margin-bottom:10px;text-shadow:0 0 20px var(--gold-glow)}
+    .card-desc{font-style:italic;font-size:15px;color:#8a8070;line-height:1.65;margin-bottom:20px}
+    .tag-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px}
+    .tag{font-family:'Cinzel',serif;font-size:8px;letter-spacing:0.15em;text-transform:uppercase;padding:4px 12px;border-radius:20px}
+    .tag-r{background:rgba(231,76,60,0.15);color:#e74c3c;border:1px solid rgba(231,76,60,0.3)}
+    .tag-m{background:rgba(155,89,182,0.15);color:#9b59b6;border:1px solid rgba(155,89,182,0.3)}
+    .tag-g{background:rgba(39,174,96,0.15);color:#27ae60;border:1px solid rgba(39,174,96,0.3)}
+    .tag-gold{background:rgba(200,168,75,0.12);color:var(--gold);border:1px solid rgba(200,168,75,0.25)}
+    .tag-teal{background:rgba(78,205,196,0.12);color:var(--teal);border:1px solid rgba(78,205,196,0.25)}
+
+    .play-btn{display:inline-flex;align-items:center;gap:12px;font-family:'Cinzel',serif;font-size:13px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;padding:18px 40px;background:linear-gradient(135deg,rgba(200,168,75,0.92),rgba(175,135,35,0.92));color:#07080f;border:none;cursor:pointer;text-decoration:none;transition:box-shadow .3s,transform .2s;position:relative;overflow:hidden}
+    .play-btn::before{content:'';position:absolute;inset:0;background:rgba(255,255,255,0.1);opacity:0;transition:opacity .3s}
+    .play-btn:hover{box-shadow:0 0 40px var(--gold-glow),0 8px 24px rgba(0,0,0,0.6);transform:translateY(-2px)}
+    .play-btn:hover::before{opacity:1}
+    .play-btn .arrow{font-size:18px;transition:transform .2s}
+    .play-btn:hover .arrow{transform:translateX(4px)}
+
+    /* FEATURES GRID */
+    .features{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0;border-top:1px solid rgba(200,168,75,0.12)}
+    .feature{padding:24px 28px;border-right:1px solid rgba(200,168,75,0.08)}
+    .feature:last-child{border-right:none}
+    .feature-icon{font-size:22px;margin-bottom:8px}
+    .feature-title{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:5px}
+    .feature-desc{font-size:12px;color:var(--muted);font-style:italic;line-height:1.5}
+
+    /* SAVE INFO */
+    .save-banner{margin-top:20px;background:rgba(78,205,196,0.06);border:1px solid rgba(78,205,196,0.15);padding:14px 20px;display:flex;align-items:center;gap:12px}
+    .save-dot{width:8px;height:8px;background:var(--teal);border-radius:50%;box-shadow:0 0 8px var(--teal);flex-shrink:0;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .save-text{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.12em;color:var(--teal)}
+  </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="vignette"></div>
+
+<nav class="nav">
+  <div class="nav-brand">ZENGE</div>
+  <div class="nav-right">
+    <span class="nav-email">{{ email }}</span>
+    <a href="/" class="nav-link">← Portal</a>
+    <a href="/logout" class="nav-link" style="color:rgba(192,57,43,0.7)">Sign Out</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">✦ The Realm of Play ✦</div>
+  <div class="hero-title">Arcade of Souls</div>
+  <div class="hero-sub">One game. Five zones. Endless darkness to conquer.</div>
+  <div class="rune-div"><span>◈</span><span>⬡</span><span>◈</span></div>
+</div>
+
+<div class="game-wrap">
+  <div class="main-card">
+    <div class="card-top-bar"></div>
+    <div class="card-inner">
+      <div class="card-icon-wrap">⚔️</div>
+      <div class="card-text">
+        <div class="card-eyebrow">⚜ Featured — Full RPG Experience</div>
+        <div class="card-title">Realm of Souls</div>
+        <div class="card-desc">A pixel-art arena brawler inspired by GoBattle.io. Pick your class, fight through 5 zones of escalating darkness, battle epic bosses with phase 2 rages, level up your character, and spend gold at the merchant between zones.</div>
+        <div class="tag-row">
+          <span class="tag tag-r">⚔ Warrior</span>
+          <span class="tag tag-m">🔮 Mage</span>
+          <span class="tag tag-g">🗡 Rogue</span>
+          <span class="tag tag-gold">5 Zones</span>
+          <span class="tag tag-gold">5 Bosses</span>
+          <span class="tag tag-teal">PC &amp; Mobile</span>
+          <span class="tag tag-teal">Auto-Save</span>
+        </div>
+        <a href="/game" class="play-btn">Enter the Realm <span class="arrow">→</span></a>
+      </div>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">🎮</div>
+        <div class="feature-title">3 Classes</div>
+        <div class="feature-desc">Warrior, Mage, Rogue — each with unique stats, attack style, and special ability</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⚔️</div>
+        <div class="feature-title">5 Bosses</div>
+        <div class="feature-desc">Each boss has a phase 2 — enrages at 50% HP with higher speed and damage</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⬆️</div>
+        <div class="feature-title">Level Up</div>
+        <div class="feature-desc">Gain XP from kills, choose from 3 random stat upgrades on every level</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🛒</div>
+        <div class="feature-title">Merchant</div>
+        <div class="feature-desc">Spend gold between zones on potions, power runes, armor, and more</div>
+      </div>
+    </div>
+  </div>
+  <div class="save-banner">
+    <div class="save-dot"></div>
+    <div class="save-text">Your progress saves automatically. Close the tab and return anytime — your character will be exactly where you left off.</div>
+  </div>
+</div>
+
+<script>
+const canvas=document.getElementById('bg-canvas'),ctx=canvas.getContext('2d');
+function resize(){canvas.width=innerWidth;canvas.height=innerHeight}resize();addEventListener('resize',resize);
+const stars=Array.from({length:180},()=>({x:Math.random(),y:Math.random()*0.8,r:Math.random()*1.3+0.2,o:Math.random()*0.5+0.2,t:Math.random()*Math.PI*2,s:Math.random()*0.012+0.003}));
+const layers=[{c:'#0d1526',p:[0,1,0.15,0.55,0.3,0.7,0.45,0.5,0.6,0.65,0.75,0.45,0.9,0.6,1,1]},{c:'#101a2e',p:[0,1,0.1,0.68,0.25,0.55,0.4,0.72,0.55,0.58,0.7,0.68,0.85,0.55,1,1]},{c:'#142035',p:[0,1,0.12,0.75,0.28,0.65,0.42,0.78,0.58,0.7,0.72,0.75,0.88,0.65,1,1]}];
+let t=0;
+function draw(){
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const sk=ctx.createLinearGradient(0,0,0,H);sk.addColorStop(0,'#020510');sk.addColorStop(1,'#07080f');ctx.fillStyle=sk;ctx.fillRect(0,0,W,H);
+  stars.forEach(s=>{s.t+=s.s;ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(255,245,220,${s.o*(0.6+0.4*Math.sin(s.t))})`;ctx.fill();});
+  const mx=W*.78,my=H*.15,mr=40;
+  const mg=ctx.createRadialGradient(mx-mr*.3,my-mr*.2,0,mx,my,mr);mg.addColorStop(0,'#f0e8c0');mg.addColorStop(1,'#a0883a');
+  ctx.beginPath();ctx.arc(mx,my,mr,0,Math.PI*2);ctx.fillStyle=mg;ctx.fill();
+  ctx.beginPath();ctx.arc(mx+mr*.25,my-mr*.1,mr*.83,0,Math.PI*2);ctx.fillStyle='rgba(5,8,18,0.5)';ctx.fill();
+  layers.forEach(l=>{ctx.beginPath();ctx.moveTo(0,H);for(let i=0;i<l.p.length;i+=2)ctx.lineTo(l.p[i]*W,l.p[i+1]*H);ctx.lineTo(W,H);ctx.closePath();ctx.fillStyle=l.c;ctx.fill();});
+  t++;requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
