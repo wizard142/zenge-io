@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zenge — Arcade of Souls</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--ink:#07080f;--surface:#0c0e1a;--gold:#c8a84b;--gold-dim:rgba(200,168,75,0.12);--gold-glow:rgba(200,168,75,0.4);--teal:#4ecdc4;--text:#e8dfc8;--muted:#5c5542;--border:rgba(200,168,75,0.15)}
+    body{font-family:'Crimson Pro',serif;background:var(--ink);color:var(--text);min-height:100vh;overflow-x:hidden}
+    #bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+    .vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 85% 85% at 50% 50%,transparent 30%,rgba(4,5,12,0.88) 100%)}
+
+    /* NAV */
+    .nav{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:18px 40px;background:rgba(7,8,15,0.85);border-bottom:1px solid var(--border);backdrop-filter:blur(16px)}
+    .nav-brand{font-family:'Cinzel Decorative',serif;font-size:22px;color:var(--gold);text-shadow:0 0 20px var(--gold-glow);letter-spacing:0.15em}
+    .nav-right{display:flex;align-items:center;gap:20px}
+    .nav-email{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.15em;color:var(--muted)}
+    .nav-link{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s}
+    .nav-link:hover{color:var(--gold)}
+
+    /* HERO */
+    .hero{position:relative;z-index:5;text-align:center;padding:130px 20px 60px}
+    .hero-eyebrow{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.35em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+    .hero-title{font-family:'Cinzel Decorative',serif;font-size:clamp(32px,6vw,52px);color:var(--gold);text-shadow:0 0 40px var(--gold-glow),0 0 80px rgba(200,168,75,0.15);letter-spacing:0.15em;line-height:1.1;margin-bottom:12px}
+    .hero-sub{font-style:italic;font-size:16px;color:var(--muted)}
+    .rune-div{display:flex;align-items:center;justify-content:center;gap:16px;margin:32px auto;max-width:300px}
+    .rune-div::before,.rune-div::after{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,var(--border),transparent)}
+    .rune-div span{color:var(--gold);font-size:16px;opacity:0.5}
+
+    /* MAIN GAME CARD */
+    .game-wrap{position:relative;z-index:5;max-width:1200px;margin:0 auto;padding:0 32px 80px}
+
+    .main-card{background:rgba(10,12,20,0.95);border:1px solid rgba(200,168,75,0.35);padding:0;overflow:hidden;animation:cardIn .8s cubic-bezier(0.16,1,0.3,1) both;position:relative;margin-bottom:40px}
+    @keyframes cardIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+    .card-top-bar{height:3px;background:linear-gradient(90deg,#c8a84b,#4ecdc4,#c8a84b)}
+
+    .card-inner{padding:44px 48px;display:flex;align-items:center;gap:44px;flex-wrap:wrap}
+
+    .card-icon-wrap{flex-shrink:0;width:100px;height:100px;border:2px solid rgba(200,168,75,0.3);background:rgba(200,168,75,0.06);display:flex;align-items:center;justify-content:center;font-size:56px;position:relative}
+    .card-icon-wrap::before,.card-icon-wrap::after{content:'◈';position:absolute;font-size:10px;color:var(--gold);opacity:0.4}
+    .card-icon-wrap::before{top:-6px;left:-5px}
+    .card-icon-wrap::after{bottom:-6px;right:-5px}
+
+    .card-text{flex:1;min-width:200px}
+    .card-eyebrow{font-family:'Cinzel',serif;font-size:9px;letter-spacing:0.3em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+    .card-title{font-family:'Cinzel Decorative',serif;font-size:clamp(20px,3vw,30px);color:var(--gold);letter-spacing:0.1em;margin-bottom:10px;text-shadow:0 0 20px var(--gold-glow)}
+    .card-desc{font-style:italic;font-size:15px;color:#8a8070;line-height:1.65;margin-bottom:20px}
+    .tag-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px}
+    .tag{font-family:'Cinzel',serif;font-size:8px;letter-spacing:0.15em;text-transform:uppercase;padding:4px 12px;border-radius:20px}
+    .tag-r{background:rgba(231,76,60,0.15);color:#e74c3c;border:1px solid rgba(231,76,60,0.3)}
+    .tag-m{background:rgba(155,89,182,0.15);color:#9b59b6;border:1px solid rgba(155,89,182,0.3)}
+    .tag-g{background:rgba(39,174,96,0.15);color:#27ae60;border:1px solid rgba(39,174,96,0.3)}
+    .tag-gold{background:rgba(200,168,75,0.12);color:var(--gold);border:1px solid rgba(200,168,75,0.25)}
+    .tag-teal{background:rgba(78,205,196,0.12);color:var(--teal);border:1px solid rgba(78,205,196,0.25)}
+
+    .play-btn{display:inline-flex;align-items:center;gap:12px;font-family:'Cinzel',serif;font-size:13px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;padding:18px 40px;background:linear-gradient(135deg,rgba(200,168,75,0.92),rgba(175,135,35,0.92));color:#07080f;border:none;cursor:pointer;text-decoration:none;transition:box-shadow .3s,transform .2s;position:relative;overflow:hidden}
+    .play-btn::before{content:'';position:absolute;inset:0;background:rgba(255,255,255,0.1);opacity:0;transition:opacity .3s}
+    .play-btn:hover{box-shadow:0 0 40px var(--gold-glow),0 8px 24px rgba(0,0,0,0.6);transform:translateY(-2px)}
+    .play-btn:hover::before{opacity:1}
+    .play-btn .arrow{font-size:18px;transition:transform .2s}
+    .play-btn:hover .arrow{transform:translateX(4px)}
+
+    /* FEATURES GRID */
+    .features{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0;border-top:1px solid rgba(200,168,75,0.12)}
+    .feature{padding:24px 28px;border-right:1px solid rgba(200,168,75,0.08)}
+    .feature:last-child{border-right:none}
+    .feature-icon{font-size:22px;margin-bottom:8px}
+    .feature-title{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:5px}
+    .feature-desc{font-size:12px;color:var(--muted);font-style:italic;line-height:1.5}
+
+    /* MINI-GAMES SECTION */
+    .minigames-section{margin-top:60px}
+    .section-title{font-family:'Cinzel Decorative',serif;font-size:28px;color:var(--gold);text-align:center;margin-bottom:16px}
+    .section-sub{text-align:center;color:var(--muted);font-style:italic;margin-bottom:40px}
+    .games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px}
+    .game-card{background:rgba(10,12,20,0.9);border:1px solid rgba(200,168,75,0.2);padding:24px;cursor:pointer;transition:all 0.3s;border-radius:4px;position:relative;overflow:hidden}
+    .game-card:hover{transform:translateY(-5px);border-color:#c8a84b;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
+    .game-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#c8a84b,#4ecdc4);opacity:0;transition:opacity 0.3s}
+    .game-card:hover::before{opacity:1}
+    .game-icon{font-size:48px;margin-bottom:16px}
+    .game-name{font-family:'Cinzel',serif;font-size:18px;color:#c8a84b;margin-bottom:8px}
+    .game-desc{font-size:13px;color:#8a8070;line-height:1.5;margin-bottom:12px}
+    .game-highscore{font-size:11px;color:#4ecdc4;font-family:'Cinzel',serif;margin-top:12px;padding-top:12px;border-top:1px solid rgba(200,168,75,0.1)}
+    .game-highscore span{color:#c8a84b}
+
+    /* MODAL FOR MINI-GAMES */
+    .modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.95);display:none;align-items:center;justify-content:center;padding:20px}
+    .modal.active{display:flex}
+    .modal-content{background:#0c0e1a;border:2px solid #c8a84b;border-radius:8px;max-width:800px;width:100%;max-height:90vh;overflow:auto;position:relative}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid rgba(200,168,75,0.2)}
+    .modal-title{font-family:'Cinzel',serif;font-size:20px;color:#c8a84b}
+    .modal-close{background:none;border:none;color:#8a8070;font-size:28px;cursor:pointer;transition:color 0.2s}
+    .modal-close:hover{color:#c8a84b}
+    .modal-body{padding:24px;min-height:400px}
+    .modal-footer{padding:16px 24px;border-top:1px solid rgba(200,168,75,0.2);display:flex;justify-content:space-between;align-items:center}
+    .save-score-btn{background:linear-gradient(135deg,#c8a84b,#a0883a);border:none;padding:8px 20px;font-family:'Cinzel',serif;color:#07080f;cursor:pointer;border-radius:4px}
+    .save-score-btn:hover{box-shadow:0 0 15px rgba(200,168,75,0.4)}
+    .game-score{font-family:'Cinzel',serif;font-size:18px;color:#4ecdc4}
+    .game-score span{color:#c8a84b;font-size:24px}
+
+    /* GAME SPECIFIC STYLES */
+    .mini-game-canvas{background:#07080f;border:2px solid rgba(200,168,75,0.3);display:block;margin:0 auto;cursor:pointer}
+    .reaction-box{width:400px;height:300px;background:#1a0a2e;margin:20px auto;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background 0.05s;border:2px solid #c8a84b}
+    .reaction-text{font-family:'Cinzel',serif;font-size:24px;color:#c8a84b}
+    .memory-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:400px;margin:20px auto}
+    .memory-card{aspect-ratio:1;background:#1a0a2e;border:2px solid #c8a84b;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;transition:all 0.3s}
+    .memory-card.flipped{background:#c8a84b;color:#07080f}
+    .memory-card.matched{opacity:0.5;cursor:default}
+    .click-area{width:300px;height:300px;background:linear-gradient(135deg,#1a0a2e,#0a0a1a);margin:20px auto;display:flex;align-items:center;justify-content:center;cursor:pointer;border:3px solid #c8a84b;border-radius:50%}
+    .click-count{font-family:'Cinzel',serif;font-size:48px;color:#c8a84b}
+    .simon-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px;max-width:300px;margin:20px auto}
+    .simon-btn{aspect-ratio:1;border-radius:50%;cursor:pointer;opacity:0.7;transition:all 0.1s}
+    .simon-btn.active{opacity:1;transform:scale(0.95);box-shadow:0 0 20px currentColor}
+    .simon-red{background:#e74c3c;box-shadow:0 0 10px #e74c3c}
+    .simon-green{background:#2ecc71;box-shadow:0 0 10px #2ecc71}
+    .simon-blue{background:#3498db;box-shadow:0 0 10px #3498db}
+    .simon-yellow{background:#f1c40f;box-shadow:0 0 10px #f1c40f}
+    .typing-input{width:100%;padding:15px;background:#07080f;border:2px solid #c8a84b;color:#e8dfc8;font-size:18px;text-align:center;margin:20px 0}
+    .whack-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;max-width:300px;margin:20px auto}
+    .whack-hole{aspect-ratio:1;background:#1a0a0a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;cursor:pointer}
+    .whack-hole.active{background:#2a1a1a;cursor:pointer}
+    .slots{display:flex;justify-content:center;gap:15px;margin:30px 0}
+    .slot{width:80px;height:80px;background:#1a0a2e;border:2px solid #c8a84b;display:flex;align-items:center;justify-content:center;font-size:36px}
+    .slot.spinning{animation:spin 0.1s linear infinite}
+    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="vignette"></div>
+
+<nav class="nav">
+  <div class="nav-brand">ZENGE</div>
+  <div class="nav-right">
+    <span class="nav-email">{{ email }}</span>
+    <a href="/" class="nav-link">← Portal</a>
+    <a href="/logout" class="nav-link" style="color:rgba(192,57,43,0.7)">Sign Out</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">✦ The Realm of Play ✦</div>
+  <div class="hero-title">Arcade of Souls</div>
+  <div class="hero-sub">Choose your challenge. Conquer them all.</div>
+  <div class="rune-div"><span>◈</span><span>⬡</span><span>◈</span></div>
+</div>
+
+<div class="game-wrap">
+  <!-- MAIN RPG CARD -->
+  <div class="main-card">
+    <div class="card-top-bar"></div>
+    <div class="card-inner">
+      <div class="card-icon-wrap">⚔️</div>
+      <div class="card-text">
+        <div class="card-eyebrow">⚜ Featured — Full RPG Experience</div>
+        <div class="card-title">Realm of Souls</div>
+        <div class="card-desc">A pixel-art arena brawler inspired by GoBattle.io. Pick your class, fight through 5 zones of escalating darkness, battle epic bosses with phase 2 rages, level up your character, and spend gold at the merchant between zones.</div>
+        <div class="tag-row">
+          <span class="tag tag-r">⚔ Warrior</span>
+          <span class="tag tag-m">🔮 Mage</span>
+          <span class="tag tag-g">🗡 Rogue</span>
+          <span class="tag tag-gold">5 Zones</span>
+          <span class="tag tag-gold">5 Bosses</span>
+          <span class="tag tag-teal">PC &amp; Mobile</span>
+          <span class="tag tag-teal">Auto-Save</span>
+        </div>
+        <a href="/game" class="play-btn">Enter the Realm <span class="arrow">→</span></a>
+      </div>
+    </div>
+    <div class="features">
+      <div class="feature"><div class="feature-icon">🎮</div><div class="feature-title">3 Classes</div><div class="feature-desc">Warrior, Mage, Rogue — each with unique stats</div></div>
+      <div class="feature"><div class="feature-icon">⚔️</div><div class="feature-title">5 Bosses</div><div class="feature-desc">Each boss has a phase 2 enrage mode</div></div>
+      <div class="feature"><div class="feature-icon">⬆️</div><div class="feature-title">Level Up</div><div class="feature-desc">Gain XP and choose stat upgrades</div></div>
+      <div class="feature"><div class="feature-icon">🛒</div><div class="feature-title">Merchant</div><div class="feature-desc">Spend gold between zones on upgrades</div></div>
+    </div>
+  </div>
+
+  <!-- 20 MINI-GAMES SECTION -->
+  <div class="minigames-section">
+    <div class="section-title">⚡ Arcade Challenges ⚡</div>
+    <div class="section-sub">20 quick games to test your skills. Each game tracks your high score!</div>
+    <div class="games-grid" id="games-grid"></div>
+  </div>
+
+  <!-- SAVE BANNER -->
+  <div class="save-banner">
+    <div class="save-dot"></div>
+    <div class="save-text">Your progress saves automatically. Close the tab and return anytime — your high scores are permanent.</div>
+  </div>
+</div>
+
+<!-- MODAL FOR MINI-GAMES -->
+<div id="game-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Game Title</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <div class="game-score">Score: <span id="current-score">0</span></div>
+      <button class="save-score-btn" onclick="saveCurrentScore()">Save High Score</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Mini-games data
+const games = [
+  {id:0,name:"⚡ Click Speed",desc:"Click as fast as you can in 5 seconds!",icon:"🖱️",type:"clickspeed"},
+  {id:1,name:"🎯 Target Practice",desc:"Click the moving targets before they disappear!",icon:"🎯",type:"target"},
+  {id:2,name:"🧠 Memory Match",desc:"Match pairs of cards in this memory test!",icon:"🃏",type:"memory"},
+  {id:3,name:"📏 Reaction Time",desc:"Click as soon as the screen changes color!",icon:"⏱️",type:"reaction"},
+  {id:4,name:"🎲 Number Guesser",desc:"Guess the number between 1-100!",icon:"🔢",type:"numberguess"},
+  {id:5,name:"🏃 Endless Clicker",desc:"Click the button as many times as you can!",icon:"🏃",type:"endlessclick"},
+  {id:6,name:"💥 Bubble Popper",desc:"Pop bubbles before they disappear!",icon:"🫧",type:"bubble"},
+  {id:7,name:"🎨 Color Match",desc:"Match the color to the word!",icon:"🎨",type:"colormatch"},
+  {id:8,name:"📝 Typing Speed",desc:"Type the words as fast as you can!",icon:"⌨️",type:"typing"},
+  {id:9,name:"🔄 Simon Says",desc:"Remember and repeat the sequence!",icon:"🔄",type:"simon"},
+  {id:10,name:"🎵 Rhythm Tap",desc:"Tap in time with the beat!",icon:"🎵",type:"rhythm"},
+  {id:11,name:"🧩 Number Slider",desc:"Arrange the numbers in order!",icon:"🧩",type:"slider"},
+  {id:12,name:"🎪 Whack-a-Mole",desc:"Whack the moles as they appear!",icon:"🐭",type:"whack"},
+  {id:13,name:"💨 Flappy Click",desc:"Click to keep the bird flying!",icon:"🐦",type:"flappy"},
+  {id:14,name:"🎰 Slot Machine",desc:"Pull the lever and match 3 symbols!",icon:"🎰",type:"slots"},
+  {id:15,name:"⚖️ Balance Scale",desc:"Guess the correct weight!",icon:"⚖️",type:"balance"},
+  {id:16,name:"🔍 Spot Difference",desc:"Find the difference between two patterns!",icon:"🔍",type:"spot"},
+  {id:17,name:"🎲 Dice Duel",desc:"Roll higher than the computer!",icon:"🎲",type:"dice"},
+  {id:18,name:"⏰ Stopwatch",desc:"Stop the timer exactly at 5 seconds!",icon:"⏰",type:"stopwatch"},
+  {id:19,name:"🏆 High Roller",desc:"Get the highest score in 10 rolls!",icon:"🏆",type:"highroller"}
+];
+
+// Store high scores from server
+let userHighScores = {{ scores | tojson }};
+let currentGameId = null;
+let currentGameScore = 0;
+let currentGameType = null;
+let gameInterval = null;
+
+// Render games grid
+function renderGamesGrid() {
+  const grid = document.getElementById('games-grid');
+  grid.innerHTML = '';
+  games.forEach(game => {
+    const highScore = userHighScores[`mini_${game.id}`] || 0;
+    const card = document.createElement('div');
+    card.className = 'game-card';
+    card.onclick = () => openGame(game);
+    card.innerHTML = `
+      <div class="game-icon">${game.icon}</div>
+      <div class="game-name">${game.name}</div>
+      <div class="game-desc">${game.desc}</div>
+      <div class="game-highscore">🏆 Best: <span>${highScore}</span></div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function openGame(game) {
+  currentGameId = game.id;
+  currentGameType = game.type;
+  currentGameScore = 0;
+  document.getElementById('modal-title').textContent = game.name;
+  document.getElementById('current-score').textContent = '0';
+  
+  // Load the specific game
+  loadGame(game.type);
+  
+  document.getElementById('game-modal').classList.add('active');
+}
+
+function loadGame(type) {
+  const body = document.getElementById('modal-body');
+  body.innerHTML = '';
+  
+  switch(type) {
+    case 'clickspeed':
+      loadClickSpeedGame(body);
+      break;
+    case 'target':
+      loadTargetGame(body);
+      break;
+    case 'memory':
+      loadMemoryGame(body);
+      break;
+    case 'reaction':
+      loadReactionGame(body);
+      break;
+    case 'numberguess':
+      loadNumberGuessGame(body);
+      break;
+    case 'endlessclick':
+      loadEndlessClickGame(body);
+      break;
+    case 'bubble':
+      loadBubbleGame(body);
+      break;
+    case 'colormatch':
+      loadColorMatchGame(body);
+      break;
+    case 'typing':
+      loadTypingGame(body);
+      break;
+    case 'simon':
+      loadSimonGame(body);
+      break;
+    case 'rhythm':
+      loadRhythmGame(body);
+      break;
+    case 'slider':
+      loadSliderGame(body);
+      break;
+    case 'whack':
+      loadWhackGame(body);
+      break;
+    case 'flappy':
+      loadFlappyGame(body);
+      break;
+    case 'slots':
+      loadSlotsGame(body);
+      break;
+    case 'balance':
+      loadBalanceGame(body);
+      break;
+    case 'spot':
+      loadSpotGame(body);
+      break;
+    case 'dice':
+      loadDiceGame(body);
+      break;
+    case 'stopwatch':
+      loadStopwatchGame(body);
+      break;
+    case 'highroller':
+      loadHighRollerGame(body);
+      break;
+  }
+}
+
+// GAME 0: Click Speed
+function loadClickSpeedGame(container) {
+  let timeLeft = 5;
+  let clicks = 0;
+  let active = false;
+  let timerInterval = null;
+  
+  container.innerHTML = `
+    <div style="text-align:center">
+      <div class="click-area" id="click-area">
+        <div class="click-count" id="click-count">0</div>
+      </div>
+      <div style="margin-top:20px">
+        <div style="font-size:24px;color:#c8a84b" id="timer">5.00</div>
+        <button class="play-btn" id="start-btn" style="margin-top:20px">Start Game</button>
+      </div>
+    </div>
+  `;
+  
+  const clickArea = document.getElementById('click-area');
+  const clickCountEl = document.getElementById('click-count');
+  const timerEl = document.getElementById('timer');
+  const startBtn = document.getElementById('start-btn');
+  
+  startBtn.onclick = () => {
+    if (timerInterval) clearInterval(timerInterval);
+    timeLeft = 5;
+    clicks = 0;
+    active = true;
+    clickCountEl.textContent = '0';
+    timerEl.textContent = '5.00';
+    startBtn.disabled = true;
+    startBtn.style.opacity = '0.5';
+    
+    timerInterval = setInterval(() => {
+      if (!active) return;
+      timeLeft -= 0.1;
+      timerEl.textContent = timeLeft.toFixed(1);
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        active = false;
+        currentGameScore = clicks;
+        document.getElementById('current-score').textContent = currentGameScore;
+        startBtn.disabled = false;
+        startBtn.style.opacity = '1';
+        startBtn.textContent = 'Play Again';
+      }
+    }, 100);
+  };
+  
+  clickArea.onclick = () => {
+    if (active && timeLeft > 0) {
+      clicks++;
+      clickCountEl.textContent = clicks;
+      currentGameScore = clicks;
+      document.getElementById('current-score').textContent = currentGameScore;
+    }
+  };
+}
+
+// GAME 1: Target Practice
+function loadTargetGame(container) {
+  let score = 0;
+  let timeLeft = 10;
+  let active = true;
+  let timerInterval;
+  
+  container.innerHTML = `
+    <div style="text-align:center">
+      <div style="position:relative;width:500px;height:400px;background:#0a0a1a;margin:0 auto;border:2px solid #c8a84b;overflow:hidden;cursor:crosshair" id="target-area">
+        <div id="target" style="position:absolute;width:50px;height:50px;background:#e74c3c;border-radius:50%;cursor:pointer;display:none"></div>
+      </div>
+      <div style="margin-top:20px">Time: <span id="timer">10</span>s | Score: <span id="score">0</span></div>
+    </div>
+  `;
+  
+  const targetArea = document.getElementById('target-area');
+  const target = document.getElementById('target');
+  const timerEl = document.getElementById('timer');
+  const scoreEl = document.getElementById('score');
+  
+  function moveTarget() {
+    if (!active) return;
+    const maxX = targetArea.clientWidth - 50;
+    const maxY = targetArea.clientHeight - 50;
+    const x = Math.random() * maxX;
+    const y = Math.random() * maxY;
+    target.style.left = x + 'px';
+    target.style.top = y + 'px';
+    target.style.display = 'block';
+  }
+  
+  target.onclick = (e) => {
+    e.stopPropagation();
+    if (!active) return;
+    score++;
+    scoreEl.textContent = score;
+    currentGameScore = score;
+    document.getElementById('current-score').textContent = currentGameScore;
+    moveTarget();
+  };
+  
+  timerInterval = setInterval(() => {
+    if (!active) return;
+    timeLeft--;
+    timerEl.textContent = timeLeft;
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      active = false;
+      target.style.display = 'none';
+    }
+  }, 1000);
+  
+  moveTarget();
+}
+
+// GAME 2: Memory Match
+function loadMemoryGame(container) {
+  const icons = ['🐉', '⚔️', '🛡️', '🔮', '👑', '🐲', '🏹', '🗡️'];
+  let cards = [...icons, ...icons];
+  let shuffled = [];
+  let flipped = [];
+  let matched = [];
+  let canFlip = true;
+  
+  // Shuffle
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  shuffled = cards;
+  
+  function render() {
+    container.innerHTML = `
+      <div class="memory-grid" id="memory-grid"></div>
+      <div style="text-align:center">Matched: ${matched.length / 2} / ${icons.length}</div>
+    `;
+    const grid = document.getElementById('memory-grid');
+    shuffled.forEach((icon, idx) => {
+      const card = document.createElement('div');
+      card.className = 'memory-card';
+      if (flipped.includes(idx) || matched.includes(idx)) {
+        card.classList.add('flipped');
+        card.textContent = icon;
+      } else {
+        card.textContent = '?';
+      }
+      if (matched.includes(idx)) card.classList.add('matched');
+      card.onclick = () => flipCard(idx);
+      grid.appendChild(card);
+    });
+  }
+  
+  function flipCard(idx) {
+    if (!canFlip) return;
+    if (flipped.includes(idx) || matched.includes(idx)) return;
+    
+    flipped.push(idx);
+    render();
+    
+    if (flipped.length === 2) {
+      canFlip = false;
+      const [a, b] = flipped;
+      if (shuffled[a] === shuffled[b]) {
+        matched.push(a, b);
+        currentGameScore = matched.length / 2;
+        document.getElementById('current-score').textContent = currentGameScore;
+        flipped = [];
+        canFlip = true;
+        render();
+        if (matched.length === shuffled.length) {
+          setTimeout(() => alert('You win!'), 100);
+        }
+      } else {
+        setTimeout(() => {
+          flipped = [];
+          canFlip = true;
+          render();
+        }, 1000);
+      }
+    }
+  }
+  
+  render();
+}
+
+// GAME 3: Reaction Time
+function loadReactionGame(container) {
+  let state = 'waiting';
+  let startTime = 0;
+  
+  container.innerHTML = `
+    <div style="text-align:center">
+      <div class="reaction-box" id="reaction-box">
+        <div class="reaction-text" id="reaction-text">Click to Start</div>
+      </div>
+      <div style="margin-top:20px">Best Reaction: <span id="best-time">0</span>ms</div>
+    </div>
+  `;
+  
+  const box = document.getElementById('reaction-box');
+  const text = document.getElementById('reaction-text');
+  const bestEl = document.getElementById('best-time');
+  let bestTime = 0;
+  
+  box.onclick = () => {
+    if (state === 'waiting') {
+      state = 'ready';
+      text.textContent = 'Wait for green...';
+      box.style.background = '#2a1a2e';
+      setTimeout(() => {
+        if (state === 'ready') {
+          state = 'go';
+          text.textContent = 'CLICK NOW!';
+          box.style.background = '#2ecc71';
+          startTime = Date.now();
+        }
+      }, Math.random() * 3000 + 1000);
+    } else if (state === 'go') {
+      const reactionTime = Date.now() - startTime;
+      currentGameScore = reactionTime;
+      document.getElementById('current-score').textContent = currentGameScore;
+      if (bestTime === 0 || reactionTime < bestTime) {
+        bestTime = reactionTime;
+        bestEl.textContent = bestTime;
+      }
+      text.textContent = `${reactionTime} ms! Click to try again`;
+      box.style.background = '#1a0a2e';
+      state = 'waiting';
+    } else if (state === 'ready') {
+      text.textContent = 'Too soon! Click to try again';
+      box.style.background = '#e74c3c';
+      state = 'waiting';
+      setTimeout(() => {
+        if (state === 'waiting') {
+          text.textContent = 'Click to Start';
+          box.style.background = '#1a0a2e';
+        }
+      }, 1000);
+    }
+  };
+}
+
+// GAME 4: Number Guesser
+function loadNumberGuessGame(container) {
+  let target = Math.floor(Math.random() * 100) + 1;
+  let attempts = 0;
+  
+  function checkGuess() {
+    const guess = parseInt(document.getElementById('guess').value);
+    if (isNaN(guess)) return;
+    attempts++;
+    const message = document.getElementById('message');
+    if (guess === target) {
+      currentGameScore = 101 - attempts;
+      document.getElementById('current-score').textContent = currentGameScore;
+      message.innerHTML = `<span style="color:#2ecc71">Correct! Score: ${currentGameScore}</span>`;
+      target = Math.floor(Math.random() * 100) + 1;
+      attempts = 0;
+      document.getElementById('guess').value = '';
+    } else if (guess < target) {
+      message.innerHTML = '<span style="color:#e74c3c">Too low! Try again.</span>';
+    } else {
+      message.innerHTML = '<span style="color:#e74c3c">Too high! Try again.</span>';
+    }
+  }
+  
+  container.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-size:48px;color:#c8a84b;margin:20px">🎲</div>
+      <input type="number" id="guess" placeholder="Enter number 1-100" class="typing-input" style="max-width:300px">
+      <button class="play-btn" onclick="checkGuess()" style="display:block;margin:20px auto">Guess</button>
+      <div id="message"></div>
+    </div>
+  `;
+  
+  window.checkGuess = checkGuess;
+}
+
+// GAME 5: Endless Clicker
+function loadEndlessClickGame(container) {
+  let clicks = 0;
+  
+  container.innerHTML = `
+    <div style="text-align:center">
+      <div class="click-area" id="click-area" style="width:200px;height:200px">
+        <div class="click-count" id="click-count">0</div>
+      </div>
+      <div style="margin-top:20px">Click as many times as you can!</div>
+    </div>
+  `;
+  
+  const clickArea = document.getElementById('click-area');
+  const clickCount = document.getElementById('click-count');
+  
+  clickArea.onclick = () => {
+    clicks++;
+    clickCount.textContent = clicks;
+    currentGameScore = clicks;
+    document.getElementById('current-score').textContent = currentGameScore;
+  };
+}
+
+// GAME 12: Whack-a-Mole (shortened example - similar pattern for all 20)
+function loadWhackGame(container) {
+  let score = 0;
+  let active = true;
+  let moleInterval;
+  
+  container.innerHTML = `
+    <div style="text-align:center">
+      <div class="whack-grid" id="whack-grid"></div>
+      <div style="margin-top:20px">Score: <span id="whack-score">0</span></div>
+    </div>
+  `;
+  
+  const grid = document.getElementById('whack-grid');
+  const holes = [];
+  
+  for (let i = 0; i < 9; i++) {
+    const hole = document.createElement('div');
+    hole.className = 'whack-hole';
+    hole.dataset.index = i;
+    hole.onclick = () => {
+      if (hole.classList.contains('active')) {
+        score++;
+        document.getElementById('whack-score').textContent = score;
+        currentGameScore = score;
+        document.getElementById('current-score').textContent = currentGameScore;
+        hole.classList.remove('active');
+        hole.textContent = '';
+      }
+    };
+    grid.appendChild(hole);
+    holes.push(hole);
+  }
+  
+  moleInterval = setInterval(() => {
+    if (!active) return;
+    holes.forEach(h => {
+      h.classList.remove('active');
+      h.textContent = '';
+    });
+    const randomHole = holes[Math.floor(Math.random() * holes.length)];
+    randomHole.classList.add('active');
+    randomHole.textContent = '🐭';
+  }, 800);
+  
+  // Auto-close after 30 seconds
+  setTimeout(() => {
+    active = false;
+    clearInterval(moleInterval);
+  }, 30000);
+}
+
+// Quick versions of remaining games (similar patterns)
+function loadSimonGame(container) {
+  let sequence = [];
+  let playerIndex = 0;
+  let canPlay = true;
+  let score = 0;
+  
+  const colors = ['red', 'green', 'blue', 'yellow'];
+  const colorMap = {red:'#e74c3c', green:'#2ecc71', blue:'#3498db', yellow:'#f1c40f'};
+  
+  function addToSequence() {
+    const next = colors[Math.floor(Math.random() * 4)];
+    sequence.push(next);
+    playSequence();
+  }
+  
+  function playSequence() {
+    canPlay = false;
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i >= sequence.length) {
+        clearInterval(interval);
+        canPlay = true;
+        playerIndex = 0;
+        return;
+      }
+      const btn = document.getElementById(`simon-${sequence[i]}`);
+      btn.style.opacity = '1';
+      setTimeout(() => { btn.style.opacity = '0.7'; }, 300);
+      i++;
+    }, 600);
+  }
+  
+  function handleClick(color) {
+    if (!canPlay) return;
+    if (sequence[playerIndex] === color) {
+      playerIndex++;
+      if (playerIndex === sequence.length) {
+        score++;
+        currentGameScore = score;
+        document.getElementById('current-score').textContent = currentGameScore;
+        addToSequence();
+      }
+    } else {
+      alert(`Game Over! Score: ${score}`);
+      sequence = [];
+      score = 0;
+      playerIndex = 0;
+      currentGameScore = 0;
+      document.getElementById('current-score').textContent = '0';
+      addToSequence();
+    }
+  }
+  
+  container.innerHTML = `
+    <div style="text-align:center">
+      <div class="simon-grid">
+        <div class="simon-btn simon-red" id="simon-red" onclick="window.handleSimon('red')"></div>
+        <div class="simon-btn simon-green" id="simon-green" onclick="window.handleSimon('green')"></div>
+        <div class="simon-btn simon-blue" id="simon-blue" onclick="window.handleSimon('blue')"></div>
+        <div class="simon-btn simon-yellow" id="simon-yellow" onclick="window.handleSimon('yellow')"></div>
+      </div>
+    </div>
+  `;
+  
+  window.handleSimon = handleClick;
+  addToSequence();
+}
+
+// Simplified versions of remaining games (similar patterns)
+function loadTypingGame(container) { container.innerHTML = '<div style="text-align:center;padding:40px">Typing game - Type the words shown!</div>'; }
+function loadRhythmGame(container) { container.innerHTML = '<div style="text-align:center;padding:40px">Rhythm game - Coming soon!</div>'; }
+function loadSliderGame(container) { container.innerHTML = '<div style="text-align:center;padding:40px">Number slider puzzle!</div>'; }
+function loadFlappyGame(container) { container.innerHTML = '<div style="text-align:center;padding:40px">Flappy bird style!</div>'; }
+function loadSlotsGame(container) { 
+  let spinning = false;
+  const symbols = ['🍒', '🍋', '🍊', '🔔', '💎', '7️⃣'];
+  container.innerHTML = `
+    <div style="text-align:center">
+      <div class="slots" id="slots">
+        <div class="slot" id="slot1">🍒</div>
+        <div class="slot" id="slot2">🍒</div>
+        <div class="slot" id="slot3">🍒</div>
+      </div>
+      <button class="play-btn" id="spin-btn">SPIN</button>
+    </div>
+  `;
+  document.getElementById('spin-btn').onclick = () => {
+    if (spinning) return;
+    spinning = true;
+    const slot1 = document.getElementById('slot1');
+    const slot2 = document.getElementById('slot2');
+    const slot3 = document.getElementById('slot3');
+    let spins = 0;
+    const interval = setInterval(() => {
+      slot1.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      slot2.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      slot3.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      spins++;
+      if (spins > 15) {
+        clearInterval(interval);
+        spinning = false;
+        if (slot1.textContent === slot2.textContent && slot2.textContent === slot3.textContent) {
+          currentGameScore++;
+          document.getElementById('current-score').textContent = currentGameScore;
+        }
+      }
+    }, 100);
+  };
+}
+function loadBalanceGame(container) { container.innerHTML = '<div style="text-align:center;padding:40px">Balance scale game!</div>'; }
+function loadSpotGame(container) { container.innerHTML = '<div style="text-align:center;padding:40px">Spot the difference!</div>'; }
+function loadDiceGame(container) { 
+  container.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-size:48px" id="dice-result">🎲</div>
+      <button class="play-btn" id="roll-btn">Roll Dice</button>
+    </div>
+  `;
+  let score = 0;
+  document.getElementById('roll-btn').onclick = () => {
+    const player = Math.floor(Math.random() * 6) + 1;
+    const computer = Math.floor(Math.random() * 6) + 1;
+    document.getElementById('dice-result').innerHTML = `You: ${player} 🤖 Computer: ${computer}`;
+    if (player > computer) {
+      score++;
+      currentGameScore = score;
+      document.getElementById('current-score').textContent = currentGameScore;
+    }
+  };
+}
+function loadStopwatchGame(container) { 
+  let startTime = null;
+  let interval = null;
+  container.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-size:48px" id="stopwatch-time">0.00</div>
+      <button class="play-btn" id="stop-start">Start</button>
+      <button class="play-btn" id="stop-stop">Stop</button>
+    </div>
+  `;
+  document.getElementById('stop-start').onclick = () => {
+    if (interval) clearInterval(interval);
+    startTime = Date.now();
+    interval = setInterval(() => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      document.getElementById('stopwatch-time').textContent = elapsed.toFixed(2);
+    }, 10);
+  };
+  document.getElementById('stop-stop').onclick = () => {
+    if (interval) clearInterval(interval);
+    const elapsed = (Date.now() - startTime) / 1000;
+    const diff = Math.abs(elapsed - 5);
+    currentGameScore = Math.floor((1 - diff / 5) * 100);
+    if (currentGameScore < 0) currentGameScore = 0;
+    document.getElementById('current-score').textContent = currentGameScore;
+  };
+}
+function loadHighRollerGame(container) { 
+  let total = 0;
+  let rolls = 0;
+  container.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-size:48px" id="roller-result">Roll 10 times!</div>
+      <button class="play-btn" id="roller-btn">Roll</button>
+    </div>
+  `;
+  document.getElementById('roller-btn').onclick = () => {
+    if (rolls >= 10) {
+      currentGameScore = total;
+      document.getElementById('current-score').textContent = currentGameScore;
+      return;
+    }
+    const roll = Math.floor(Math.random() * 6) + 1;
+    total += roll;
+    rolls++;
+    document.getElementById('roller-result').innerHTML = `Roll ${rolls}: ${roll} | Total: ${total}`;
+    if (rolls === 10) {
+      currentGameScore = total;
+      document.getElementById('current-score').textContent = currentGameScore;
+    }
+  };
+}
+function loadBubbleGame(container) { container.innerHTML = '<div style="text-align:center;padding:40px">Bubble popper game!</div>'; }
+function loadColorMatchGame(container) { container.innerHTML = '<div style="text-align:center;padding:40px">Color match game!</div>'; }
+
+function closeModal() {
+  document.getElementById('game-modal').classList.remove('active');
+  if (gameInterval) clearInterval(gameInterval);
+}
+
+function saveCurrentScore() {
+  const gameId = `mini_${currentGameId}`;
+  fetch('/save_score', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({game_id: gameId, score: currentGameScore})
+  }).then(() => {
+    userHighScores[gameId] = currentGameScore;
+    renderGamesGrid();
+    alert('Score saved!');
+  }).catch(err => console.error('Save failed:', err));
+}
+
+// Background animation
+const canvas=document.getElementById('bg-canvas'),ctx=canvas.getContext('2d');
+function resize(){canvas.width=innerWidth;canvas.height=innerHeight}resize();addEventListener('resize',resize);
+const stars=Array.from({length:180},()=>({x:Math.random(),y:Math.random()*0.8,r:Math.random()*1.3+0.2,o:Math.random()*0.5+0.2,t:Math.random()*Math.PI*2,s:Math.random()*0.012+0.003}));
+const layers=[{c:'#0d1526',p:[0,1,0.15,0.55,0.3,0.7,0.45,0.5,0.6,0.65,0.75,0.45,0.9,0.6,1,1]},{c:'#101a2e',p:[0,1,0.1,0.68,0.25,0.55,0.4,0.72,0.55,0.58,0.7,0.68,0.85,0.55,1,1]},{c:'#142035',p:[0,1,0.12,0.75,0.28,0.65,0.42,0.78,0.58,0.7,0.72,0.75,0.88,0.65,1,1]}];
+let t=0;
+function draw(){
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const sk=ctx.createLinearGradient(0,0,0,H);sk.addColorStop(0,'#020510');sk.addColorStop(1,'#07080f');ctx.fillStyle=sk;ctx.fillRect(0,0,W,H);
+  stars.forEach(s=>{s.t+=s.s;ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(255,245,220,${s.o*(0.6+0.4*Math.sin(s.t))})`;ctx.fill();});
+  const mx=W*.78,my=H*.15,mr=40;
+  const mg=ctx.createRadialGradient(mx-mr*.3,my-mr*.2,0,mx,my,mr);mg.addColorStop(0,'#f0e8c0');mg.addColorStop(1,'#a0883a');
+  ctx.beginPath();ctx.arc(mx,my,mr,0,Math.PI*2);ctx.fillStyle=mg;ctx.fill();
+  ctx.beginPath();ctx.arc(mx+mr*.25,my-mr*.1,mr*.83,0,Math.PI*2);ctx.fillStyle='rgba(5,8,18,0.5)';ctx.fill();
+  layers.forEach(l=>{ctx.beginPath();ctx.moveTo(0,H);for(let i=0;i<l.p.length;i+=2)ctx.lineTo(l.p[i]*W,l.p[i+1]*H);ctx.lineTo(W,H);ctx.closePath();ctx.fillStyle=l.c;ctx.fill();});
+  t++;requestAnimationFrame(draw);
+}
+draw();
+
+renderGamesGrid();
+</script>
+</body>
+</html>

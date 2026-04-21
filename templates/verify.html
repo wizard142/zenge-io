@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zenge — Verify Your Email</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Crimson+Pro:ital,wght@0,400;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--ink:#080d14;--pane:rgba(8,14,22,0.84);--teal:#4ecdc4;--teal-dim:rgba(78,205,196,0.14);--teal-glow:rgba(78,205,196,0.45);--gold:#c8a84b;--text:#d8efe0;--muted:#4a6660;--border:rgba(78,205,196,0.2);--danger:#e05555}
+    body{font-family:'Crimson Pro',serif;background:var(--ink);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    #scene{position:fixed;inset:0;z-index:0}
+    .vignette{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse 80% 80% at 50% 50%,transparent 25%,rgba(4,8,14,0.9) 100%)}
+    .logo-wrap{position:fixed;top:32px;left:50%;transform:translateX(-50%);z-index:10;text-align:center}
+    .logo-title{font-family:'Cinzel Decorative',serif;font-size:clamp(24px,5vw,34px);font-weight:700;letter-spacing:0.25em;color:var(--teal);text-shadow:0 0 36px var(--teal-glow);line-height:1}
+    .logo-sub{font-style:italic;font-size:12px;color:var(--muted);letter-spacing:0.35em;text-transform:uppercase;margin-top:6px}
+    .card{position:relative;z-index:10;width:440px;background:var(--pane);border:1px solid var(--border);backdrop-filter:blur(22px);padding:44px 44px 40px;animation:emerge 0.8s cubic-bezier(0.16,1,0.3,1) 0.2s both}
+    @keyframes emerge{from{opacity:0;transform:translateY(28px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+    .card::before,.card::after{content:'⬡';position:absolute;font-size:13px;color:var(--teal);opacity:0.4}
+    .card::before{top:-8px;left:-6px}.card::after{bottom:-8px;right:-6px}
+    .deco{display:flex;align-items:center;gap:12px;margin-bottom:26px}
+    .deco::before,.deco::after{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,var(--teal),transparent);opacity:0.35}
+    .deco-sym{font-size:18px;color:var(--teal);text-shadow:0 0 14px var(--teal-glow)}
+    h1{font-family:'Cinzel',serif;font-size:20px;font-weight:600;letter-spacing:0.08em;margin-bottom:5px;text-align:center}
+    .sub{text-align:center;font-style:italic;font-size:13px;color:var(--muted);margin-bottom:6px}
+    .email-badge{text-align:center;font-family:'Cinzel',serif;font-size:11px;color:var(--teal);background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.25);padding:7px 16px;margin:14px 0 24px;letter-spacing:0.05em;word-break:break-all}
+    .error{background:rgba(224,85,85,0.1);border:1px solid rgba(224,85,85,0.35);color:#e09090;font-family:'Cinzel',serif;font-size:11px;letter-spacing:0.07em;padding:10px 14px;margin-bottom:18px;text-align:center}
+    .success-msg{background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.3);color:var(--teal);font-family:'Cinzel',serif;font-size:11px;letter-spacing:0.07em;padding:10px 14px;margin-bottom:18px;text-align:center}
+    .code-wrap{display:flex;gap:10px;justify-content:center;margin-bottom:24px}
+    .code-digit{width:52px;height:64px;background:rgba(78,205,196,0.05);border:2px solid rgba(78,205,196,0.2);color:var(--teal);font-family:'Cinzel',serif;font-size:28px;font-weight:700;text-align:center;outline:none;transition:border-color .2s,box-shadow .2s,background .2s;caret-color:transparent}
+    .code-digit:focus{border-color:var(--teal);background:var(--teal-dim);box-shadow:0 0 0 3px rgba(78,205,196,0.12)}
+    input[name="code"]{display:none}
+    .btn{width:100%;padding:15px;background:linear-gradient(135deg,rgba(78,205,196,0.88),rgba(50,170,162,0.9));color:#080d14;font-family:'Cinzel',serif;font-size:12px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;border:none;cursor:pointer;transition:box-shadow .3s,transform .2s}
+    .btn:hover{box-shadow:0 0 28px var(--teal-glow),0 4px 16px rgba(0,0,0,.5);transform:translateY(-1px)}
+    .divider{display:flex;align-items:center;gap:14px;margin:22px 0 16px}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+    .divider span{font-size:11px;color:var(--muted)}
+    .links{display:flex;flex-direction:column;gap:10px}
+    .link-btn{display:block;text-align:center;font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);text-decoration:none;padding:9px;border:1px solid rgba(78,205,196,0.15);transition:color .3s,border-color .3s;cursor:pointer;background:none;width:100%}
+    .link-btn:hover{color:var(--teal);border-color:rgba(78,205,196,0.4)}
+    .hint{font-size:12px;color:var(--muted);text-align:center;font-style:italic;line-height:1.5;margin-bottom:20px}
+    .runes{display:flex;justify-content:center;gap:18px;margin-top:22px;opacity:0.15}
+    .runes span{font-size:15px;color:var(--teal)}
+    .timer{text-align:center;font-family:'Cinzel',serif;font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-top:6px}
+    .timer span{color:var(--teal)}
+  </style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div class="vignette"></div>
+<div class="logo-wrap">
+  <div class="logo-title">ZENGE</div>
+  <div class="logo-sub">Verify your identity</div>
+</div>
+<div class="card">
+  <div class="deco"><div class="deco-sym">⬡</div></div>
+  <h1>Check Your Email</h1>
+  <p class="sub">A 6-digit code was sent to:</p>
+  <div class="email-badge">{{ email }}</div>
+  {% if error %}<div class="error">⚠ {{ error }}</div>{% endif %}
+  {% if success is defined and success %}<div class="success-msg">✦ {{ success }}</div>{% endif %}
+  <p class="hint">Enter the code below. It expires in 10 minutes.</p>
+  <form action="/verify" method="post" id="verify-form">
+    <input type="hidden" name="email_hidden" value="{{ email }}"/>
+    <div class="code-wrap" id="digit-row">
+      <input class="code-digit" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" id="d0"/>
+      <input class="code-digit" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" id="d1"/>
+      <input class="code-digit" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" id="d2"/>
+      <input class="code-digit" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" id="d3"/>
+      <input class="code-digit" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" id="d4"/>
+      <input class="code-digit" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" id="d5"/>
+    </div>
+    <input type="hidden" name="code" id="code-hidden"/>
+    <button class="btn" type="submit" id="submit-btn">Verify &amp; Enter the Realm</button>
+  </form>
+  <div class="divider"><span>or</span></div>
+  <div class="links">
+    <form action="/resend_code" method="post" style="width:100%">
+      <input type="hidden" name="email_hidden" value="{{ email }}"/>
+      <button class="link-btn" type="submit">↺ Resend Code</button>
+    </form>
+    <a href="/register" class="link-btn">← Back to Registration</a>
+  </div>
+  <div class="runes"><span>⬡</span><span>◈</span><span>✦</span><span>◈</span><span>⬡</span></div>
+</div>
+<script>
+// ── DIGIT INPUT LOGIC ──
+const digits = [0,1,2,3,4,5].map(i => document.getElementById('d'+i));
+const hidden = document.getElementById('code-hidden');
+
+digits.forEach((d, i) => {
+  d.addEventListener('input', e => {
+    const val = d.value.replace(/\D/g, '');
+    d.value = val.slice(-1);
+    if (val && i < 5) digits[i+1].focus();
+    syncHidden();
+  });
+  d.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !d.value && i > 0) {
+      digits[i-1].value = '';
+      digits[i-1].focus();
+      syncHidden();
+    }
+    if (e.key === 'ArrowLeft' && i > 0) digits[i-1].focus();
+    if (e.key === 'ArrowRight' && i < 5) digits[i+1].focus();
+  });
+  // Handle paste on any digit
+  d.addEventListener('paste', e => {
+    e.preventDefault();
+    const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'');
+    pasted.slice(0,6).split('').forEach((ch, j) => {
+      if (digits[i+j]) digits[i+j].value = ch;
+    });
+    const next = Math.min(i + pasted.length, 5);
+    digits[next].focus();
+    syncHidden();
+  });
+});
+
+function syncHidden() {
+  hidden.value = digits.map(d => d.value).join('');
+}
+
+document.getElementById('verify-form').addEventListener('submit', e => {
+  syncHidden();
+  if (hidden.value.length < 6) {
+    e.preventDefault();
+    digits[0].focus();
+  }
+});
+
+// Focus first empty digit on load
+const firstEmpty = digits.find(d => !d.value);
+if (firstEmpty) firstEmpty.focus();
+
+// ── BACKGROUND CANVAS ──
+const canvas = document.getElementById('scene'), ctx = canvas.getContext('2d');
+function resize(){ canvas.width = innerWidth; canvas.height = innerHeight; }
+resize(); addEventListener('resize', resize);
+const stars = Array.from({length:180}, () => ({
+  x:Math.random(), y:Math.random()*.8, r:Math.random()*1.2+0.2,
+  o:Math.random()*.5+.15, t:Math.random()*Math.PI*2, s:Math.random()*.015+.003
+}));
+const aurora = [
+  {color:'rgba(78,205,196,0.05)',y:0.3,phase:0,speed:.004},
+  {color:'rgba(78,205,196,0.03)',y:0.5,phase:1,speed:.003},
+];
+const mts = [{c:'#080e18',p:[0,1,0.15,0.6,0.3,.72,0.5,.58,0.7,.7,0.88,.62,1,1],sp:0},
+             {c:'#0c1422',p:[0,1,0.12,.72,0.3,.8,0.5,.7,0.7,.78,0.9,.72,1,1],sp:.00006}];
+let t=0;
+function draw(){
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const sk=ctx.createLinearGradient(0,0,0,H);sk.addColorStop(0,'#030810');sk.addColorStop(1,'#080d14');
+  ctx.fillStyle=sk;ctx.fillRect(0,0,W,H);
+  aurora.forEach(a=>{a.phase+=a.speed;const cx2=W*.5+Math.sin(a.phase)*W*.12;const g=ctx.createRadialGradient(cx2,a.y*H,0,cx2,a.y*H,W*.55);g.addColorStop(0,a.color);g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);});
+  stars.forEach(s=>{s.t+=s.s;ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(200,240,235,${s.o*(0.6+0.4*Math.sin(s.t))})`;ctx.fill();});
+  const mx=W*.2,my=H*.18,mr=38;
+  const mg=ctx.createRadialGradient(mx-mr*.3,my-mr*.2,0,mx,my,mr);mg.addColorStop(0,'#a0ece8');mg.addColorStop(1,'#2a8a86');
+  ctx.beginPath();ctx.arc(mx,my,mr,0,Math.PI*2);ctx.fillStyle=mg;ctx.fill();
+  ctx.beginPath();ctx.arc(mx+mr*.22,my-mr*.1,mr*.84,0,Math.PI*2);ctx.fillStyle='rgba(4,8,18,0.55)';ctx.fill();
+  mts.forEach(m=>{const off=(t*m.sp*W)%W;ctx.beginPath();ctx.moveTo(-off,H);for(let i=0;i<m.p.length;i+=2)ctx.lineTo(m.p[i]*W-off,m.p[i+1]*H);ctx.lineTo(W*2-off,H);ctx.closePath();ctx.fillStyle=m.c;ctx.fill();
+    if(m.sp>0){ctx.beginPath();ctx.moveTo(W-off,H);for(let i=0;i<m.p.length;i+=2)ctx.lineTo(m.p[i]*W+W-off,m.p[i+1]*H);ctx.lineTo(W*3-off,H);ctx.closePath();ctx.fillStyle=m.c;ctx.fill();}});
+  t++;requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
