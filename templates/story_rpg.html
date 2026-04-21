@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Zenge — Echoes of the Forgotten | Chapter 1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Crimson Pro', serif;
+            background: #07080f;
+            color: #e8dfc8;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Background */
+        #bg-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .vignette {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: radial-gradient(ellipse 85% 85% at 50% 50%, transparent 30%, rgba(4, 5, 12, 0.88) 100%);
+        }
+
+        /* Header */
+        .game-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 20;
+            background: rgba(7, 8, 15, 0.95);
+            border-bottom: 1px solid rgba(200, 168, 75, 0.2);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .game-title {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 18px;
+            color: #c8a84b;
+            letter-spacing: 0.15em;
+        }
+
+        .game-stats {
+            display: flex;
+            gap: 20px;
+            font-family: 'Cinzel', serif;
+            font-size: 11px;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-value {
+            color: #4ecdc4;
+        }
+
+        .back-btn {
+            color: #8a8070;
+            text-decoration: none;
+            font-size: 12px;
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Main Game Container */
+        .game-container {
+            position: relative;
+            z-index: 5;
+            max-width: 900px;
+            margin: 80px auto 40px;
+            padding: 0 20px;
+        }
+
+        /* Scene Card */
+        .scene-card {
+            background: rgba(10, 12, 22, 0.95);
+            border: 1px solid rgba(200, 168, 75, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scene Image Area */
+        .scene-image {
+            height: 250px;
+            background: linear-gradient(135deg, #0a0a1a, #0f0f1f);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            border-bottom: 1px solid rgba(200, 168, 75, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scene-image::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="30" r="2" fill="%23c8a84b20"/><circle cx="80" cy="50" r="3" fill="%23c8a84b20"/><circle cx="45" cy="70" r="1.5" fill="%23c8a84b20"/></svg>') repeat;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .scene-emoji {
+            filter: drop-shadow(0 0 20px rgba(200, 168, 75, 0.3));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Dialogue Box */
+        .dialogue-box {
+            padding: 30px;
+            border-bottom: 1px solid rgba(200, 168, 75, 0.1);
+        }
+
+        .speaker-name {
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            color: #c8a84b;
+            letter-spacing: 0.1em;
+            margin-bottom: 12px;
+        }
+
+        .dialogue-text {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #e8dfc8;
+            font-style: italic;
+        }
+
+        /* Choices Area */
+        .choices-area {
+            padding: 20px 30px 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .choice-btn {
+            background: rgba(200, 168, 75, 0.08);
+            border: 1px solid rgba(200, 168, 75, 0.25);
+            padding: 14px 20px;
+            font-family: 'Crimson Pro', serif;
+            font-size: 16px;
+            color: #e8dfc8;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+
+        .choice-btn:hover {
+            background: rgba(200, 168, 75, 0.2);
+            border-color: #c8a84b;
+            transform: translateX(5px);
+        }
+
+        /* Combat Area */
+        .combat-area {
+            padding: 30px;
+        }
+
+        .combat-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .combatant-card {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(200, 168, 75, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .combatant-name {
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+            color: #c8a84b;
+            margin-bottom: 10px;
+        }
+
+        .combatant-hp {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .hp-bar {
+            height: 8px;
+            background: #2a1a1a;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+            width: 100%;
+            transition: width 0.3s;
+        }
+
+        .combatant-stats {
+            font-size: 12px;
+            color: #8a8070;
+        }
+
+        .combat-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .combat-btn {
+            background: rgba(200, 168, 75, 0.15);
+            border: 1px solid rgba(200, 168, 75, 0.4);
+            padding: 12px 25px;
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            color: #c8a84b;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+
+        .combat-btn:hover {
+            background: rgba(200, 168, 75, 0.3);
+            transform: scale(1.02);
+        }
+
+        .combat-log {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            font-size: 13px;
+            color: #8a8070;
+            text-align: center;
+            font-style: italic;
+        }
+
+        /* Inventory */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .inventory-item {
+            background: rgba(200, 168, 75, 0.08);
+            border: 1px solid rgba(200, 168, 75, 0.2);
+            padding: 15px;
+            text-align: center;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .inventory-item:hover {
+            background: rgba(200, 168, 75, 0.15);
+            border-color: #c8a84b;
+        }
+
+        .item-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .item-name {
+            font-size: 11px;
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Class Selection */
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .class-card {
+            background: rgba(200, 168, 75, 0.08);
+            border: 2px solid rgba(200, 168, 75, 0.3);
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 8px;
+        }
+
+        .class-card:hover {
+            transform: translateY(-5px);
+            border-color: #c8a84b;
+            background: rgba(200, 168, 75, 0.15);
+        }
+
+        .class-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .class-name {
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+            color: #c8a84b;
+            margin-bottom: 10px;
+        }
+
+        .class-desc {
+            font-size: 12px;
+            color: #8a8070;
+            margin-bottom: 10px;
+        }
+
+        .class-stats {
+            font-size: 11px;
+            color: #4ecdc4;
+        }
+
+        button {
+            background: none;
+            border: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="vignette"></div>
+
+<div class="game-header">
+    <div class="game-title">⚔ ECHOES OF THE FORGOTTEN ⚔</div>
+    <div class="game-stats">
+        <div class="stat">❤️ <span id="stat-hp" class="stat-value">0</span></div>
+        <div class="stat">🔮 <span id="stat-mp" class="stat-value">0</span></div>
+        <div class="stat">⭐ Lv <span id="stat-level" class="stat-value">1</span></div>
+        <div class="stat">💰 <span id="stat-gold" class="stat-value">0</span></div>
+    </div>
+    <a href="/games" class="back-btn">← Exit</a>
+</div>
+
+<div class="game-container" id="game-container">
+    <!-- Dynamic content loads here -->
+</div>
+
+<script>
+    // ============================================
+    // GAME STATE
+    // ============================================
+    let gameState = {
+        // Player stats
+        character_name: "The Wanderer",
+        character_class: null,
+        level: 1,
+        xp: 0,
+        xp_next: 100,
+        hp: 50,
+        max_hp: 50,
+        mana: 20,
+        max_mana: 20,
+        strength: 10,
+        dexterity: 10,
+        intelligence: 10,
+        gold: 50,
+        
+        // Game progress
+        chapter: 1,
+        step: "class_select", // class_select, scene, combat, inventory
+        story_flags: {},
+        companions: [],
+        inventory: ["Health Potion", "Health Potion"],
+        equipment: {
+            weapon: "Rusted Sword",
+            armor: "Leather Vest",
+            accessory: null
+        },
+        
+        // Current scene
+        current_scene: null,
+        current_combat: null,
+        dialogue_index: 0,
+        choices: []
+    };
+
+    // ============================================
+    // CHAPTER 1: THE WHISPERING WOODS
+    // ============================================
+    const chapter1 = {
+        // Opening scene
+        opening: {
+            speaker: "???",
+            text: "You wake on cold, damp ground. Moss covers the ancient stones beneath you. The last thing you remember... nothing. Your name, your past, all gone.",
+            image: "🌲",
+            choices: [
+                { text: "Where am I?", next: "meet_kael" },
+                { text: "Who am I?", next: "meet_kael" },
+                { text: "Stand up and look around", next: "meet_kael" }
+            ]
+        },
+        
+        meet_kael: {
+            speaker: "Elder Kael",
+            text: "You're awake. I feared the seal might have taken your last breath as well as your memories.",
+            image: "👴",
+            choices: [
+                { text: "You know me?", next: "kael_explain" },
+                { text: "What seal?", next: "kael_explain" },
+                { text: "...", next: "kael_explain" }
+            ]
+        },
+        
+        kael_explain: {
+            speaker: "Elder Kael",
+            text: "A hundred years ago, you were the greatest hero of Aethelgard. You sacrificed your memory to seal away the Void King. But now... the seal is breaking.",
+            image: "👴",
+            choices: [
+                { text: "The Void King?", next: "kael_warning" },
+                { text: "Why tell me this?", next: "kael_warning" }
+            ]
+        },
+        
+        kael_warning: {
+            speaker: "Elder Kael",
+            text: "Without the Shattered Crown, he will return within days. You must journey across the five lands and reforge the crown before it's too late. Your journey begins in the Whispering Woods.",
+            image: "👴",
+            choices: [
+                { text: "I'll do it. Where do I start?", next: "first_combat_setup", action: "start_combat" },
+                { text: "I need a moment...", next: "first_combat_setup", action: "start_combat" }
+            ]
+        },
+        
+        combat_win: {
+            speaker: "Elder Kael",
+            text: "Well fought! The Void's corruption grows stronger, but so do you. Take this—you'll need it for the journey ahead.",
+            image: "👴",
+            choices: [
+                { text: "Continue the journey →", next: "chapter_end", action: "give_reward" }
+            ]
+        },
+        
+        chapter_end: {
+            speaker: "Narrator",
+            text: "Chapter 1 Complete! You've taken your first steps into the Whispering Woods. The first shard of the Shattered Crown awaits in the Ashen Marshes...",
+            image: "🏆",
+            choices: [
+                { text: "Continue to Chapter 2 (Coming Soon)", next: "end" }
+            ]
+        }
+    };
+
+    // Enemy definitions
+    const enemies = {
+        shadow_wisp: {
+            name: "Shadow Wisp",
+            hp: 25,
+            max_hp: 25,
+            attack: 6,
+            defense: 2,
+            xp_reward: 50,
+            gold_reward: 15,
+            image: "👻"
+        }
+    };
+
+    // ============================================
+    // COMBAT SYSTEM
+    // ============================================
+    let currentEnemy = null;
+    let combatActive = false;
+    let combatLog = [];
+
+    function startCombat(enemyId) {
+        currentEnemy = JSON.parse(JSON.stringify(enemies[enemyId]));
+        combatActive = true;
+        combatLog = ["⚔️ Combat started! ⚔️"];
+        gameState.step = "combat";
+        renderCombat();
+        updateUI();
+    }
+
+    function playerAttack() {
+        if (!combatActive) return;
+        
+        const damage = Math.max(1, Math.floor(gameState.strength + Math.random() * 8));
+        currentEnemy.hp -= damage;
+        combatLog.unshift(`⚔️ You deal ${damage} damage to ${currentEnemy.name}!`);
+        
+        if (currentEnemy.hp <= 0) {
+            combatWin();
+            return;
+        }
+        
+        // Enemy turn
+        const enemyDamage = Math.max(1, Math.floor(currentEnemy.attack - (gameState.dexterity * 0.3) + Math.random() * 5));
+        gameState.hp -= enemyDamage;
+        combatLog.unshift(`💀 ${currentEnemy.name} deals ${enemyDamage} damage to you!`);
+        
+        if (gameState.hp <= 0) {
+            gameState.hp = 1;
+            combatLog.unshift(`❤️ You barely survive!`);
+        }
+        
+        renderCombat();
+        updateUI();
+    }
+
+    function playerDefend() {
+        if (!combatActive) return;
+        
+        const healAmount = Math.floor(gameState.max_hp * 0.15);
+        gameState.hp = Math.min(gameState.max_hp, gameState.hp + healAmount);
+        combatLog.unshift(`🛡️ You defend and recover ${healAmount} HP!`);
+        
+        // Enemy still attacks but reduced
+        const enemyDamage = Math.max(1, Math.floor(currentEnemy.attack * 0.5 + Math.random() * 3));
+        gameState.hp -= enemyDamage;
+        combatLog.unshift(`💀 ${currentEnemy.name} deals ${enemyDamage} damage!`);
+        
+        if (gameState.hp <= 0) {
+            gameState.hp = 1;
+        }
+        
+        renderCombat();
+        updateUI();
+    }
+
+    function playerUsePotion() {
+        if (!combatActive) return;
+        
+        const potionIndex = gameState.inventory.indexOf("Health Potion");
+        if (potionIndex === -1) {
+            combatLog.unshift(`❌ No health potions!`);
+            renderCombat();
+            return;
+        }
+        
+        gameState.inventory.splice(potionIndex, 1);
+        const healAmount = 30;
+        gameState.hp = Math.min(gameState.max_hp, gameState.hp + healAmount);
+        combatLog.unshift(`🧪 You use a Health Potion and recover ${healAmount} HP!`);
+        
+        // Enemy attacks
+        const enemyDamage = Math.max(1, Math.floor(currentEnemy.attack + Math.random() * 5));
+        gameState.hp -= enemyDamage;
+        combatLog.unshift(`💀 ${currentEnemy.name} deals ${enemyDamage} damage!`);
+        
+        if (gameState.hp <= 0) {
+            gameState.hp = 1;
+        }
+        
+        renderCombat();
+        updateUI();
+    }
+
+    function combatWin() {
+        combatActive = false;
+        gameState.xp += currentEnemy.xp_reward;
+        gameState.gold += currentEnemy.gold_reward;
+        
+        combatLog.unshift(`✨ VICTORY! ✨`);
+        combatLog.unshift(`📈 +${currentEnemy.xp_reward} XP`);
+        combatLog.unshift(`💰 +${currentEnemy.gold_reward} Gold`);
+        
+        // Check level up
+        while (gameState.xp >= gameState.xp_next) {
+            levelUp();
+        }
+        
+        renderCombat();
+        updateUI();
+        
+        // Auto-advance after delay
+        setTimeout(() => {
+            if (gameState.current_scene === "first_combat_setup") {
+                showScene("combat_win");
+            }
+        }, 2000);
+    }
+
+    function levelUp() {
+        gameState.level++;
+        gameState.xp -= gameState.xp_next;
+        gameState.xp_next = Math.floor(gameState.xp_next * 1.3);
+        
+        // Stat increases
+        const hpGain = 15;
+        const manaGain = 10;
+        gameState.max_hp += hpGain;
+        gameState.hp = gameState.max_hp;
+        gameState.max_mana += manaGain;
+        gameState.mana = gameState.max_mana;
+        gameState.strength += 3;
+        gameState.dexterity += 2;
+        gameState.intelligence += 2;
+        
+        combatLog.unshift(`🌟 LEVEL UP! Now level ${gameState.level}! 🌟`);
+        combatLog.unshift(`❤️ +${hpGain} Max HP | 🔮 +${manaGain} Max MP`);
+    }
+
+    // ============================================
+    // SCENE SYSTEM
+    // ============================================
+    function showScene(sceneId) {
+        const scene = chapter1[sceneId];
+        if (!scene) {
+            console.error("Scene not found:", sceneId);
+            return;
+        }
+        
+        gameState.current_scene = sceneId;
+        gameState.step = "scene";
+        
+        const container = document.getElementById("game-container");
+        container.innerHTML = `
+            <div class="scene-card">
+                <div class="scene-image">
+                    <div class="scene-emoji" style="font-size: 80px;">${scene.image || "📜"}</div>
+                </div>
+                <div class="dialogue-box">
+                    <div class="speaker-name">${scene.speaker}</div>
+                    <div class="dialogue-text">${scene.text}</div>
+                </div>
+                <div class="choices-area" id="choices-area"></div>
+            </div>
+        `;
+        
+        const choicesArea = document.getElementById("choices-area");
+        scene.choices.forEach(choice => {
+            const btn = document.createElement("button");
+            btn.className = "choice-btn";
+            btn.textContent = choice.text;
+            btn.onclick = () => {
+                if (choice.action === "start_combat") {
+                    startCombat("shadow_wisp");
+                } else if (choice.action === "give_reward") {
+                    gameState.gold += 50;
+                    gameState.inventory.push("Health Potion", "Health Potion");
+                    updateUI();
+                    showScene(choice.next);
+                } else {
+                    showScene(choice.next);
+                }
+            };
+            choicesArea.appendChild(btn);
+        });
+    }
+
+    // ============================================
+    // COMBAT RENDERER
+    // ============================================
+    function renderCombat() {
+        const container = document.getElementById("game-container");
+        container.innerHTML = `
+            <div class="scene-card">
+                <div class="combat-area">
+                    <div class="combat-row">
+                        <div class="combatant-card">
+                            <div class="combatant-name">${gameState.character_name || "You"}</div>
+                            <div class="combatant-hp">❤️ ${Math.max(0, gameState.hp)}/${gameState.max_hp}</div>
+                            <div class="hp-bar"><div class="hp-fill" style="width: ${(gameState.hp / gameState.max_hp) * 100}%"></div></div>
+                            <div class="combatant-stats">⚔️ ${gameState.strength} | 🛡️ ${gameState.dexterity}</div>
+                        </div>
+                        <div class="combatant-card">
+                            <div class="combatant-name">${currentEnemy ? currentEnemy.name : "Enemy"}</div>
+                            <div class="combatant-hp">❤️ ${currentEnemy ? Math.max(0, currentEnemy.hp) : 0}/${currentEnemy ? currentEnemy.max_hp : 0}</div>
+                            <div class="hp-bar"><div class="hp-fill" style="width: ${currentEnemy ? (currentEnemy.hp / currentEnemy.max_hp) * 100 : 0}%"></div></div>
+                            <div class="combatant-stats">${currentEnemy ? `⚔️ ${currentEnemy.attack}` : ""}</div>
+                        </div>
+                    </div>
+                    <div class="combat-actions">
+                        <button class="combat-btn" onclick="playerAttack()">⚔️ Attack</button>
+                        <button class="combat-btn" onclick="playerDefend()">🛡️ Defend</button>
+                        <button class="combat-btn" onclick="playerUsePotion()">🧪 Potion (${gameState.inventory.filter(i => i === "Health Potion").length})</button>
+                    </div>
+                    <div class="combat-log">
+                        ${combatLog.slice(0, 5).join('<br>')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ============================================
+    // CLASS SELECTION
+    // ============================================
+    function showClassSelection() {
+        gameState.step = "class_select";
+        const container = document.getElementById("game-container");
+        container.innerHTML = `
+            <div class="scene-card">
+                <div class="scene-image">
+                    <div class="scene-emoji" style="font-size: 60px;">⚔️ 🔮 🏹</div>
+                </div>
+                <div class="dialogue-box">
+                    <div class="speaker-name">Choose Your Path</div>
+                    <div class="dialogue-text">Before you begin your journey, you must remember who you were... Choose your class wisely.</div>
+                </div>
+                <div class="class-grid" id="class-grid"></div>
+            </div>
+        `;
+        
+        const classGrid = document.getElementById("class-grid");
+        const classes = [
+            { name: "Knight", icon: "⚔️", desc: "High HP and defense. Sword mastery.", stats: { hp: 65, mana: 15, strength: 14, dexterity: 8, intelligence: 6 } },
+            { name: "Ranger", icon: "🏹", desc: "Balanced. Bow attacks and traps.", stats: { hp: 50, mana: 20, strength: 11, dexterity: 13, intelligence: 9 } },
+            { name: "Mage", icon: "🔮", desc: "Low HP. Powerful spells.", stats: { hp: 40, mana: 35, strength: 7, dexterity: 9, intelligence: 15 } }
+        ];
+        
+        classes.forEach(cls => {
+            const card = document.createElement("div");
+            card.className = "class-card";
+            card.innerHTML = `
+                <div class="class-icon">${cls.icon}</div>
+                <div class="class-name">${cls.name}</div>
+                <div class="class-desc">${cls.desc}</div>
+                <div class="class-stats">❤️ ${cls.stats.hp} | 🔮 ${cls.stats.mana} | ⚔️ ${cls.stats.strength}</div>
+            `;
+            card.onclick = () => selectClass(cls.name, cls.stats);
+            classGrid.appendChild(card);
+        });
+    }
+
+    function selectClass(className, stats) {
+        gameState.character_class = className;
+        gameState.max_hp = stats.hp;
+        gameState.hp = stats.hp;
+        gameState.max_mana = stats.mana;
+        gameState.mana = stats.mana;
+        gameState.strength = stats.strength;
+        gameState.dexterity = stats.dexterity;
+        gameState.intelligence = stats.intelligence;
+        gameState.gold = 50;
+        
+        updateUI();
+        showScene("opening");
+    }
+
+    // ============================================
+    // UI UPDATE
+    // ============================================
+    function updateUI() {
+        document.getElementById("stat-hp").textContent = `${gameState.hp}/${gameState.max_hp}`;
+        document.getElementById("stat-mp").textContent = `${gameState.mana}/${gameState.max_mana}`;
+        document.getElementById("stat-level").textContent = gameState.level;
+        document.getElementById("stat-gold").textContent = gameState.gold;
+    }
+
+    // ============================================
+    // SAVE/LOAD
+    // ============================================
+    async function saveGame() {
+        try {
+            const response = await fetch('/api/rpg/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(gameState)
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert("Game saved!");
+            }
+        } catch (e) {
+            console.error("Save failed:", e);
+        }
+    }
+
+    async function loadGame() {
+        try {
+            const response = await fetch('/api/rpg/load');
+            const data = await response.json();
+            if (data.exists) {
+                if (confirm("Found saved game. Load it?")) {
+                    Object.assign(gameState, data);
+                    updateUI();
+                    if (gameState.step === "scene" && gameState.current_scene) {
+                        showScene(gameState.current_scene);
+                    } else if (gameState.step === "combat") {
+                        startCombat("shadow_wisp");
+                    } else {
+                        showClassSelection();
+                    }
+                } else {
+                    showClassSelection();
+                }
+            } else {
+                showClassSelection();
+            }
+        } catch (e) {
+            console.error("Load failed:", e);
+            showClassSelection();
+        }
+    }
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    loadGame();
+
+    // ============================================
+    // BACKGROUND ANIMATION
+    // ============================================
+    const canvas = document.getElementById('bg-canvas'), ctx = canvas.getContext('2d');
+    function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+    resize();
+    addEventListener('resize', resize);
+    
+    const stars = Array.from({ length: 150 }, () => ({
+        x: Math.random(), y: Math.random() * 0.8, r: Math.random() * 1.5 + 0.2,
+        o: Math.random() * 0.5 + 0.2, t: Math.random() * Math.PI * 2, s: Math.random() * 0.015 + 0.003
+    }));
+    
+    function drawBackground() {
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#020510');
+        grad.addColorStop(1, '#07080f');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+        
+        stars.forEach(s => {
+            s.t += s.s;
+            ctx.beginPath();
+            ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 245, 220, ${s.o * (0.6 + 0.4 * Math.sin(s.t))})`;
+            ctx.fill();
+        });
+        
+        requestAnimationFrame(drawBackground);
+    }
+    drawBackground();
+</script>
+</body>
+</html>
